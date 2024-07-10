@@ -1,0 +1,80 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+  "files": {
+    "include": ["*.tsx", "*.ts", "*.js", "*.json"],
+    "ignore": ["./dist", "./node_modules", ".husky", "docs", "./gen", "*.gen.ts", "*.d.ts"]
+  },
+  "vcs": {
+    "defaultBranch": "dev",
+    "useIgnoreFile": true,
+    "enabled": true,
+    "clientKind": "git"
+  },
+  "organizeImports": {
+    "enabled": true,
+    "ignore": ["./gen"]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 108,
+    "ignore": ["./gen"]
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "asNeeded",
+      "quoteStyle": "single",
+      "enabled": true,
+      "jsxQuoteStyle": "double",
+      "arrowParentheses": "always",
+      "trailingCommas": "none"
+    }
+  },
+  "linter": {
+    "ignore": ["*.scss", "*.md", ".DS_Store", "*.svg", "*.d.ts"],
+    "enabled": true,
+    "rules": {
+      "all": true,
+      "complexity": {
+        "noForEach": "off",
+        "useOptionalChain": "warn",
+        "useLiteralKeys": "off",
+        "noExcessiveCognitiveComplexity": "off"
+      },
+      "correctness": {
+        "useHookAtTopLevel": "off"
+      },
+      "a11y": {
+        "useHeadingContent": "off",
+        "useKeyWithClickEvents": "off",
+        "useKeyWithMouseEvents": "off",
+        "useAnchorContent": "off",
+        "useValidAnchor": "off",
+        "useMediaCaption": "off",
+        "useAltText": "off",
+        "useButtonType": "off",
+        "noRedundantAlt": "off",
+        "noSvgWithoutTitle": "off"
+      },
+      "nursery": {
+        "useImportRestrictions": "off"
+      },
+      "performance": {
+        "noBarrelFile": "off"
+      },
+      "style": {
+        "noNamespaceImport": "warn",
+        "useBlockStatements": "off",
+        "noImplicitBoolean": "off",
+        "useNamingConvention": "off",
+        "useImportType": "off",
+        "noDefaultExport": "off",
+        "useFilenamingConvention": "off"
+      },
+      "suspicious": {
+        "noConsoleLog": "off",
+        "noAssignInExpressions": "off"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+node_modules
+dist
+.vinxi
+.vscode
+.output
+.idea
+.text
+*.pem
+bun.lockb
