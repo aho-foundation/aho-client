@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.9.2/schema.json",
   "files": {
     "include": ["*.tsx", "*.ts", "*.js", "*.json"],
     "ignore": ["./dist", "./node_modules", ".husky", "docs", "./gen", "*.gen.ts", "*.d.ts"]
@@ -72,7 +72,7 @@
         "useFilenamingConvention": "off"
       },
       "suspicious": {
-        "noConsoleLog": "off",
+        "noConsole": "off",
         "noAssignInExpressions": "off"
       }
     }
