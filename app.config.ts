@@ -14,6 +14,7 @@ try {
 }
 
 export default defineConfig({
+    ssr: false,
     devOverlay: true,
     server: {
         https: key ? {

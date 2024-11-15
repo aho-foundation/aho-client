@@ -1,5 +1,5 @@
 import { Accessor, JSX, createContext, createSignal, onCleanup, useContext } from 'solid-js'
-import { ConnectedPeer, Switchboard } from 'switchboard.js'
+import { ConnectedPeer, SBClientOptions, Switchboard } from 'switchboard.js'
 
 export type RawPeerData = string | ArrayBuffer | Blob | ArrayBufferView
 
@@ -42,19 +42,28 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
   }
 
   const connect = async () => {
-    console.log('getting trackerslist')
-    const r1 = await fetch('https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt')
-    const trackerslist = (await r1.text()).split('\n').filter((t) => t.startsWith('https:') || t.startsWith('wss:'))
-    console.log('trackerslist', trackerslist)
     try {
-      // Создаем инстанс Switchboard с улучшенными настройками
-      const sb = new Switchboard('aho', {
+      // Создаем инстанс Switchboard
+      const sb = new Switchboard('aho-network', {
+        trackers: [
+          {
+            uri: 'wss://tracker.openwebtorrent.com',
+            customPeerOpts: {
+              trickleICE: false,
+              trickleTimeout: 15000,
+              rtcPeerOpts: {
+                iceCandidatePoolSize: 10,
+                iceServers: [
+                  { urls: 'stun:stun.l.google.com:19302' }
+                ]
+              }
+            }
+          }
+        ],
         clientTimeout: 30000,
         clientMaxRetries: 3,
-        clientBlacklistDuration: 60000, // 1 минута блокировки после превышения попыток
-        //useLongIds: true, // Используем длинные ID для большей безопасности
-        trackers: trackerslist
-      })
+        clientBlacklistDuration: 60000
+      } as SBClientOptions)
 
       // Обработка подключения новых пиров
       sb.on('peer', (peer: ConnectedPeer) => {

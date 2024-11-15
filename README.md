@@ -13,3 +13,9 @@ This boilerplate should help get you started developing with Tauri, Solid and Ty
 brew install mkcert
 mkcert localhost
 ```
+
+## Development
+
+```sh
+npm run tauri dev
+```

@@ -46,7 +46,8 @@ export const viteConfig = defineConfig(async ({ mode }) => ({
     // don't minify for debug builds
     minify: process.env.TAURI_ENV_DEBUG ? false : 'esbuild',
     // produce sourcemaps for debug builds
-    sourcemap: !!process.env.TAURI_ENV_DEBUG
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    ssr: false
   }
 }) as ViteCustomizableConfig)
 
