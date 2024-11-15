@@ -9,7 +9,8 @@
     "build": "vinxi build",
     "serve": "vinxi preview",
     "tauri": "tauri",
-    "fix": "npx @biomejs/biome check src/. --fix"
+    "fix": "npx @biomejs/biome check src/. --fix",
+    "typecheck": "tsc --noEmit"
   },
   "license": "MIT",
   "dependencies": {
@@ -24,10 +25,7 @@
     "@tauri-apps/cli": "^2.1.0",
     "internal-ip": "^8.0.0",
     "typescript": "^5.6.3",
-    "vinxi": "^0.4.3",
-    "vite": "^5.4.11",
-    "vite-plugin-mkcert": "^1.17.6",
-    "vite-plugin-solid": "^2.10.2"
+    "vite-plugin-mkcert": "^1.17.6"
   },
   "trustedDependencies": [
     "@biomejs/biome"
