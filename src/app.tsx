@@ -1,23 +1,22 @@
-import { createSignal } from 'solid-js'
-import './app.css'
+import { Component } from 'solid-js'
+import { ChatLog } from '~/components/ChatLog'
+import { OnlinePeers } from '~/components/OnlinePeers'
+import { TalkingCircle } from '~/components/TalkingCircle'
+import { ContactsProvider } from '~/context/contacts'
+import { NetworkProvider } from '~/context/network'
 
-export default function App() {
-  const [count, setCount] = createSignal(0)
-
+const App: Component = () => {
   return (
-    <main>
-      <h1>Hello world!</h1>
-      <img src="tauri.svg" />
-      <button class="increment" onClick={() => setCount(count() + 1)} type="button">
-        Clicks: {count()}
-      </button>
-      <p>
-        Visit{' '}
-        <a href="https://start.solidjs.com" target="_blank" rel="noreferrer">
-          start.solidjs.com
-        </a>{' '}
-        to learn how to build SolidStart apps.
-      </p>
-    </main>
+    <NetworkProvider>
+      <ContactsProvider>
+        <>
+          <TalkingCircle />
+          <ChatLog />
+          <OnlinePeers />
+        </>
+      </ContactsProvider>
+    </NetworkProvider>
   )
 }
+
+export default App

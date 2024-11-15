@@ -18,7 +18,8 @@
     "@solidjs/start": "^1.0.10",
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-shell": "^2.0.1",
-    "solid-js": "^1.9.3"
+    "solid-js": "^1.9.3",
+    "switchboard.js": "^2.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -26,7 +27,8 @@
     "internal-ip": "^8.0.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
-    "vite-plugin-mkcert": "^1.17.6"
+    "vite-plugin-mkcert": "^1.17.6",
+    "vite-plugin-node-polyfills": "^0.22.0"
   },
   "trustedDependencies": [
     "@biomejs/biome"

@@ -1,4 +1,4 @@
-import { defineConfig } from "@solidjs/start/config"
+import { defineConfig, ViteCustomizableConfig } from "@solidjs/start/config"
 // biome-ignore lint/correctness/noNodejsModules: build context
 import { readFileSync } from 'node:fs'
 
@@ -21,5 +21,5 @@ export default defineConfig({
             cert: cert
         } : undefined,
     },
-    vite: viteConfig
+    vite: viteConfig as ViteCustomizableConfig
 });
