@@ -8,3 +8,5 @@ mount(() => {
   console.log('Client entry: Mounting root component')
   return <StartClient />
 }, document.getElementById('app') || document.body)
+
+export default {}

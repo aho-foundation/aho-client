@@ -17,6 +17,10 @@ export default defineConfig({
     ssr: false,
     devOverlay: true,
     server: {
+        prerender: {
+            crawlLinks: false,
+            routes: [],
+        },
         https: key ? {
             key: key,
             cert: cert
