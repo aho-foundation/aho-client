@@ -2,6 +2,7 @@ import { Component, For, Show, createSignal, onMount } from 'solid-js'
 import { ConnectedPeer } from 'switchboard.js'
 import { CenterVideo } from '~/components/CenterVideo'
 import { ListenerCircle } from '~/components/ListenerCircle'
+import { Loading } from '~/components/Loading'
 import { RawPeerData, useNetwork } from '~/context/network'
 
 import styles from '~/styles/TalkingCircle.module.css'
@@ -9,13 +10,14 @@ import styles from '~/styles/TalkingCircle.module.css'
 export type AhoMessage = { kind: string; reply?: string; body: string; order?: string[] }
 
 export const TalkingCircle: Component = () => {
-  const { connect, currentSwarm, connection, addDataHandler, broadcast, speaker, setSpeaker } =
-    useNetwork()
-  const [showContacts, setShowContacts] = createSignal(true)
-  const [showChat, setShowChat] = createSignal(true)
+  console.log('TalkingCircle: Rendering')
+
+  const { connection, addDataHandler, broadcast, speaker, setSpeaker } = useNetwork()
   const [order, setOrder] = createSignal<string[]>([])
 
   onMount(() => {
+    console.log('TalkingCircle: Mounted')
+
     // data handler got 'aho!' from peer.id === speaker()
     addDataHandler('pass-the-talking-stick', (peerId: string, data: RawPeerData) => {
       if (typeof data === 'string') {
@@ -64,35 +66,44 @@ export const TalkingCircle: Component = () => {
 
   return (
     <div class={styles.container}>
-
-      <div class={styles.controls}>
-        <button onClick={connect}>{connection()?.peerID ? `#${currentSwarm()}` : 'Подключиться'}</button>
-        <button onClick={() => setShowContacts((p) => !p)}>{showContacts() ? 'Скрыть' : 'Показать'} участников</button>
-        <button onClick={() => setShowChat((p) => !p)}>{showChat() ? 'Скрыть' : 'Показать'} чат</button>
-      </div>
-
-      <div class={styles.mainContent}>
-        {/* Центральный видео-спикер */}
-        <Show when={speaker()} fallback={<div class={styles.placeholder}>Нет активного спикера</div>}>
-          <CenterVideo peerId={speaker() || ''} />
-          <Show when={speaker() === connection()?.peerID}>
-            <button onClick={handlePassTheTalkingStick}>Передать слово</button>
+      <Show
+        when={connection()?.peerID}
+        fallback={
+          <>
+            {console.log('TalkingCircle: No connection, showing loading')}
+            <Loading />
+          </>
+        }
+      >
+        <div class={styles.mainContent}>
+          <Show
+            when={speaker()}
+            fallback={
+              <>
+                {console.log('TalkingCircle: No active speaker')}
+                <div class={styles.placeholder}>Нет активного спикера</div>
+              </>
+            }
+          >
+            <CenterVideo peerId={speaker() || ''} />
+            <Show when={speaker() === connection()?.peerID}>
+              <button onClick={handlePassTheTalkingStick}>Передать слово</button>
+            </Show>
           </Show>
-        </Show>
 
-        {/* Круг из участников */}
-        <div class={styles.videoCircle}>
-          <For each={connection()?.connectedPeers || []}>
-            {(peer: ConnectedPeer) => (
-              <ListenerCircle
-                peerId={peer.id}
-                me={connection()?.peerID === peer.id}
-                isSpeaking={speaker() === peer.id}
-              />
-            )}
-          </For>
+          <div class={styles.videoCircle}>
+            <For each={connection()?.connectedPeers || []}>
+              {(peer: ConnectedPeer) => (
+                <ListenerCircle
+                  peerId={peer.id}
+                  me={connection()?.peerID === peer.id}
+                  isSpeaking={speaker() === peer.id}
+                />
+              )}
+            </For>
+          </div>
         </div>
-      </div>
+      </Show>
     </div>
   )
 }

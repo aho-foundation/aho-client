@@ -1,21 +1,39 @@
-# Tauri v2-beta + SolidStart v1 + Typescript
+# P2P Video Chat Application
 
-This boilerplate should help get you started developing with Tauri, Solid and Typescript.
+Децентрализованное приложение для видеочата и обмена сообщениями, построенное на WebRTC с использованием SolidJS и Tauri.
 
-## Recommended IDE Setup
+## Технологический стек
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+### Frontend
+- **SolidJS** - реактивная UI библиотека
+- **TypeScript** - типизация и улучшенный DX
+- **CSS Modules** - изолированные стили компонентов
+- **Switchboard.js** - P2P коммуникации через WebRTC
+
+### Backend (Tauri)
+- **Rust** - нативная производительность
+- **WebSocket Server** - для обнаружения пиров
+- **mDNS** - локальное обнаружение сервисов
+
+## Структура проекта
+
+- `/src` - Исходный код фронтенда (SolidStart + TypeScript)
+- `/src-tauri` - Rust бэкенд для нативных функций
+- `/src/components` - Реактивные компоненты
+- `/src/context` - Контексты для управления состоянием
+- `/src/styles` - CSS модули
+
+## Безопасность
+
+- Поддержка HTTPS для локальной разработки
+- P2P шифрование для видео/аудио потоков
+- Изолированные возможности Tauri для безопасного доступа к системным ресурсам
 
 
-## HTTPS for localhost
+### Функциональность
 
-```sh
-brew install mkcert
-mkcert localhost
-```
-
-## Development
-
-```sh
-npm run tauri dev
-```
+- [x] чат
+- [x] видео
+- [x] аудио
+- [x] передача "talking stick"
+- [x] список онлайн пользователей

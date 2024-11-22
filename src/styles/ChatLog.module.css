@@ -1,0 +1,340 @@
+body, div, span, p, input, textarea, button {
+  font-family: Helvetica;
+}
+
+.sidebar {
+  position: fixed;
+  right: -320px;
+  top: 0;
+  width: 320px;
+  height: 100vh;
+  background: var(--color-white);
+  box-shadow: -2px 0 5px var(--color-shadow);
+  transition: right 0.3s ease;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebarVisible {
+  right: 0;
+}
+
+.chatLog {
+  flex: 1;
+  padding: 20px;
+  margin: 0;
+  list-style: none;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  background: var(--color-message-bg);
+  padding: 12px 16px;
+  border-radius: 12px;
+  max-width: 85%;
+  line-height: 1.4;
+  animation: messageAppear var(--animation-duration-normal) var(--animation-easing);
+}
+
+.message.self {
+  align-self: flex-end;
+  background: var(--color-message-self);
+  color: white;
+}
+
+.burgerButton {
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  background: white;
+  border: none;
+  cursor: pointer;
+  z-index: 1001;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.burgerButton span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #333;
+  transition: all 0.3s ease;
+}
+
+.burgerButton.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.burgerButton.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.burgerButton.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+.messageInput {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: none;
+  width: 100%;
+  min-width: 100%;
+  background: var(--color-white);
+  transition: transform var(--animation-duration-normal) var(--animation-easing);
+}
+
+.messageInput input {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.messageInput input:focus {
+  border: 1px solid black;
+}
+
+.messageInput button {
+  padding: 10px 20px;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.peer-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: grid;
+    place-items: center;
+    z-index: 9999;
+  }
+  
+  .peer-modal__content {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 4px;
+    width: 300px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .peer-modal__list {
+    list-style: none;
+    padding: 0;
+    margin: .5rem 0;
+  }
+  
+  .peer-modal__item {
+    padding: .5rem;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .peer-modal__item:hover {
+    background: #f5f5f5;
+  }
+  
+  .peer-modal__buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-top: 1rem;
+  }
+  
+  .peer-modal__button {
+    padding: .25rem .5rem;
+  }
+
+.topControls {
+  position: fixed;
+  top: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 1001;
+}
+
+.leftControls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.rightControls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sendButton {
+  width: 40px;
+  height: 40px;
+  border: none;
+  cursor: pointer;
+  background: white;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.sendButton:active {
+  transform: scale(0.95);
+}
+
+.sendButton.longPress {
+  background: var(--color-primary);
+  color: white;
+}
+
+.sendButton svg {
+  transition: all 0.3s ease;
+}
+
+.sendButton .plane {
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+/* При отправке линия превращается в точку */
+@keyframes sendDot {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.3);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.sendButton.sending .plane {
+  animation: sendDot 0.5s ease forwards;
+}
+
+.modalList {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  margin-bottom: 8px;
+  min-width: 200px;
+  animation: modalSlideUp var(--animation-duration-normal) var(--animation-easing);
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.peerList {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.peerItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.peerItem:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.peerItem input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.sendSelectedButton {
+  width: 100%;
+  padding: 8px;
+  background: #2481cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.sendSelectedButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.messageList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.inputContainer {
+  position: relative;
+  padding: 16px;
+  background: var(--color-background);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Позиционируем кнопку отправки */
+.inputContainer .sendButton {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+}

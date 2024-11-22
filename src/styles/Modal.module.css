@@ -1,0 +1,32 @@
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: grid;
+    place-items: center;
+    z-index: 9999;
+  }
+  
+  .modal__content {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 4px;
+    width: 300px;
+  }
+  
+  .modal__input {
+    width: 100%;
+    margin: .5rem 0;
+    padding: .25rem;
+    box-sizing: border-box;
+  }
+  
+  .modal__buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+  }
+  
+  .modal__button {
+    padding: .25rem .5rem;
+  }

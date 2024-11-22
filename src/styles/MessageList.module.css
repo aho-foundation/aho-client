@@ -1,0 +1,61 @@
+.chatLog {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    list-style: none;
+    padding-bottom: 60px;
+    scroll-behavior: smooth;
+  }
+  
+  .message {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--color-message-bg);
+    font-size: 14px;
+    line-height: 1.4;
+    animation: messageAppear 0.3s ease;
+  }
+  
+  .message.self {
+    align-self: flex-end;
+    background: var(--color-primary);
+    color: white;
+  }
+  
+  .message strong {
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  
+  @keyframes messageAppear {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .chatLog::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .chatLog::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .chatLog::-webkit-scrollbar-thumb {
+    background: var(--color-gray-300);
+    border-radius: 3px;
+  }
+  
+  .chatLog::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gray-400);
+  }

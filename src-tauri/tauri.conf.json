@@ -36,5 +36,12 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "tauri": {
+    "allowlist": {
+      "dialog": {
+        "all": true
+      }
+    }
   }
 }

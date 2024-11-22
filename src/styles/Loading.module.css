@@ -1,0 +1,59 @@
+.loader {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .stick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 12px;
+    height: 2px;
+    background: var(--color-primary, #2481cc);
+    border-radius: 1px;
+    transform-origin: left center;
+  }
+  
+  /* Позиционируем палочки под углом 120° друг к другу */
+  .stick:nth-child(1) {
+    transform: translate(-50%, -50%) rotate(0deg);
+    animation: stickPulse 1.2s ease-in-out infinite;
+    animation-delay: 0s;
+  }
+  
+  .stick:nth-child(2) {
+    transform: translate(-50%, -50%) rotate(120deg);
+    animation: stickPulse 1.2s ease-in-out infinite;
+    animation-delay: 0.4s;
+  }
+  
+  .stick:nth-child(3) {
+    transform: translate(-50%, -50%) rotate(240deg);
+    animation: stickPulse 1.2s ease-in-out infinite;
+    animation-delay: 0.8s;
+  }
+  
+  @keyframes stickPulse {
+    0%, 100% {
+      opacity: 0.3;
+      transform: translate(-50%, -50%) rotate(var(--rotation)) scale(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1);
+    }
+  }
+  
+  /* Добавляем случайное вращение всего компонента */
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .loader {
+  animation: spin 3s linear infinite;
+}

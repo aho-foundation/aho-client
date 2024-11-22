@@ -1,5 +1,5 @@
 import { Accessor, JSX, createContext, createSignal, onCleanup, useContext } from 'solid-js'
-import { ConnectedPeer, SBClientOptions, Switchboard } from 'switchboard.js'
+import { ConnectedPeer, SBClientOptions, Switchboard, TrackerOptions } from 'switchboard.js'
 
 export type RawPeerData = string | ArrayBuffer | Blob | ArrayBufferView
 
@@ -16,9 +16,44 @@ interface NetworkContextType {
   setSpeaker: (peerId: string) => void
 }
 
+const workingDefaultTracker = {
+  uri: 'wss://tracker.openwebtorrent.com',
+  customPeerOpts: {
+    trickleICE: false,
+    trickleTimeout: 15000,
+    rtcPeerOpts: {
+      iceCandidatePoolSize: 10,
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    }
+  }
+} as TrackerOptions
+
+export const discoveryTracker = async () => {
+  // Проверяем, запущено ли приложение в Tauri
+  const isTauri = window && 'window.__TAURI__' in window
+
+  if (isTauri) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core')
+      const serverUrl = await invoke('find_local_server')
+      console.log('Найден существующий сервер:', serverUrl)
+      return serverUrl
+    } catch {
+      console.log('Сервер не найден, запускаем свой')
+      const { invoke } = await import('@tauri-apps/api/core')
+      await invoke('start_peer_server')
+      return 'ws://localhost:8080'
+    }
+  } else {
+    // Для браузера используем дефолтный трекер
+    return workingDefaultTracker.uri
+  }
+}
+
 const NetworkContext = createContext<NetworkContextType>()
 
 export const NetworkProvider = (props: { children: JSX.Element }) => {
+  console.log('NetworkProvider: Initializing')
   const [speaker, setSpeaker] = createSignal<string | undefined>()
   const [disconnected, setDisconnected] = createSignal<Set<string>>(new Set())
   const [streams, setStreams] = createSignal<Record<string, MediaStream>>({})
@@ -29,55 +64,59 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
   >({} as Record<string, (peerId: string, data: RawPeerData) => void>)
 
   const handleRawPeerData = (peerId: string, data: RawPeerData) => {
-    // we accept parsable json strings
+    console.log('Получены сырые данные от пира:', peerId, data)
     if (typeof data === 'string') {
       let parsed = data
       try {
         parsed = JSON.parse(data)
+        console.log('Разобранные данные:', parsed)
       } catch (e) {
-        console.warn('cant parse data', e)
+        console.warn('Не удалось разобрать данные:', e)
       }
-      Object.values(dataHandlers()).forEach((handler) => handler(peerId, parsed))
+      Object.entries(dataHandlers()).forEach(([name, handler]) => {
+        console.log('Вызов обработчика:', name)
+        handler(peerId, data)
+      })
     }
   }
 
   const connect = async () => {
+    console.log('NetworkProvider: Starting connection process')
     try {
-      // Создаем инстанс Switchboard
+      console.log('NetworkProvider: Getting tracker URL')
+      const trackerUrl = await discoveryTracker()
+      console.log('NetworkProvider: Tracker URL received:', trackerUrl)
+
+      const trackers = [workingDefaultTracker]
+
+      if (trackerUrl !== workingDefaultTracker.uri) {
+        console.log('NetworkProvider: Adding local tracker')
+        trackers.push({
+          uri: trackerUrl as string,
+          customPeerOpts: workingDefaultTracker.customPeerOpts
+        })
+      }
+
+      console.log('NetworkProvider: Creating Switchboard with trackers:', trackers)
       const sb = new Switchboard('aho-network', {
-        trackers: [
-          {
-            uri: 'wss://tracker.openwebtorrent.com',
-            customPeerOpts: {
-              trickleICE: false,
-              trickleTimeout: 15000,
-              rtcPeerOpts: {
-                iceCandidatePoolSize: 10,
-                iceServers: [
-                  { urls: 'stun:stun.l.google.com:19302' }
-                ]
-              }
-            }
-          }
-        ],
+        trackers,
         clientTimeout: 30000,
         clientMaxRetries: 3,
         clientBlacklistDuration: 60000
       } as SBClientOptions)
 
-      // Обработка подключения новых пиров
+      console.log('NetworkProvider: Switchboard created, ID:', sb.peerID)
+
       sb.on('peer', (peer: ConnectedPeer) => {
-        console.log('New peer connected:', peer)
+        console.log('NetworkProvider: New peer discovered:', peer)
         peer.on('connect', () => {
-          console.log('Peer connected:', peer.id)
-          if (switchboard()?.peerID === speaker()) {
-            peer.send('welcome')
-          }
+          console.log(`NetworkProvider: Peer ${peer.id} connected`)
+          if (switchboard()?.peerID === speaker()) peer.send('welcome')
         })
         peer.on('data', (data: RawPeerData) => handleRawPeerData(peer.id, data))
         peer.on('stream', (stream: MediaStream) => setStreams((prev) => ({ ...prev, [peer.id]: stream })))
         peer.on('close', () => {
-          console.log('Peer disconnected:', peer.id)
+          console.log(`Peer ${peer.id} disconnected`)
           setStreams((prev) => {
             const newStreams = { ...prev }
             delete newStreams[peer.id]
@@ -85,18 +124,29 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
           })
           setDisconnected((prev) => prev.add(peer.id))
         })
-      })
-      sb.on('peer-error', console.error)
-      sb.on('warn', console.warn)
 
-      // Подключаемся к комнате
-      const swarmName = window.location.hash || prompt('Enter a swarm name') || 'welcome'
-      await sb.swarm(swarmName)
-      setCurrentSwarm(swarmName)
+        peer.on('handshake', (message: string) => {
+          console.log(`Peer ${peer.id} handshake:`, message)
+        })
+
+        peer.on('error', console.error)
+      })
+
+      console.log('NetworkProvider: Attempting to join swarm "welcome"')
+      await sb.swarm('welcome')
+      console.log('NetworkProvider: Successfully joined swarm')
+
+      setCurrentSwarm('welcome')
       setSwitchboard(sb)
-      console.debug(sb)
+
+      // Проверяем состояние после подключения
+      console.log('NetworkProvider: Connection state:', {
+        peerID: sb.peerID,
+        connectedPeers: sb.connectedPeers,
+        currentSwarm: currentSwarm()
+      })
     } catch (err) {
-      console.error('Failed to connect:', err)
+      console.error('NetworkProvider: Connection failed with error:', err)
       throw err
     }
   }
@@ -119,7 +169,19 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
   }
 
   const broadcast = (data: RawPeerData) => {
-    Object.values(switchboard()?.connectedPeers || {}).forEach((p: ConnectedPeer) => p.send(data))
+    console.log('Network: Broadcasting message:', data)
+    const peers = switchboard()?.connectedPeers
+    if (peers) {
+      const peerIds = Object.keys(peers)
+      console.log('Network: Sending to peers:', peerIds)
+      Object.values(peers).forEach((p: ConnectedPeer) => {
+        console.log('Network: Sending to peer:', p.id)
+        p.send(data)
+      })
+      console.log('Network: Broadcast complete')
+    } else {
+      console.warn('Network: No connected peers')
+    }
   }
   const getPeerStream = (peerId: string) => {
     return streams()[peerId]
