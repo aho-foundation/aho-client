@@ -1,12 +1,12 @@
 import { Component, createSignal } from 'solid-js'
+import { TopControls } from '../TopControls.tsx'
 import { BurgerButton } from './BurgerButton.tsx'
 import { ChatLog } from './ChatLog.tsx'
-import { TopControls } from './TopControls.tsx'
 
 import styles from '~/styles/Sidebar.module.css'
 
 export const Sidebar: Component = () => {
-  const [isOpen, setIsOpen] = createSignal(false)
+  const [isOpen, setIsOpen] = createSignal(true)
 
   return (
     <>

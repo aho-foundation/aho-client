@@ -1,4 +1,4 @@
-import { Accessor, JSX, createContext, createSignal, onCleanup, useContext } from 'solid-js'
+import { Accessor, JSX, createContext, createEffect, createSignal, on, onCleanup, useContext } from 'solid-js'
 import { ConnectedPeer, SBClientOptions, Switchboard, TrackerOptions } from 'switchboard.js'
 
 export type RawPeerData = string | ArrayBuffer | Blob | ArrayBufferView
@@ -9,6 +9,7 @@ interface NetworkContextType {
   connect: () => Promise<void>
   disconnect: () => void
   currentSwarm: Accessor<string | undefined>
+  setCurrentSwarm: (swarm: string) => void
   addDataHandler: (name: string, handler: (peerId: string, data: RawPeerData) => void) => void
   getPeerStream: (peerId: string) => MediaStream | undefined
   disconnected: Accessor<Set<string>>
@@ -120,7 +121,7 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
             peer.send('welcome')
           }
         })
-        
+
         peer.on('data', (data: RawPeerData) => {
           console.log(`NetworkProvider: Received data from ${peer.id}:`, data)
           handleRawPeerData(peer.id, data)
@@ -213,6 +214,7 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
         broadcast,
         connection: switchboard,
         currentSwarm,
+        setCurrentSwarm,
         connect,
         disconnect,
         addDataHandler,

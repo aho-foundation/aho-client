@@ -4,6 +4,7 @@ import { CenterVideo } from '~/components/CenterVideo'
 import { ListenerCircle } from '~/components/ListenerCircle'
 import { Loading } from '~/components/Loading'
 import { RawPeerData, useNetwork } from '~/context/network'
+import { getMyStream } from '~/lib/getMyStream'
 
 import styles from '~/styles/TalkingCircle.module.css'
 
@@ -14,9 +15,19 @@ export const TalkingCircle: Component = () => {
 
   const { connection, addDataHandler, broadcast, speaker, setSpeaker } = useNetwork()
   const [order, setOrder] = createSignal<string[]>([])
+  const [mediaError, setMediaError] = createSignal<string>('')
 
-  onMount(() => {
+  onMount(async () => {
     console.log('TalkingCircle: Mounted')
+
+    // Запрашиваем разрешения на медиа при монтировании
+    try {
+      await getMyStream()
+      console.log('TalkingCircle: Media permissions granted')
+    } catch (err) {
+      console.error('TalkingCircle: Failed to get media permissions:', err)
+      setMediaError('Пожалуйста, разрешите доступ к камере и микрофону')
+    }
 
     // data handler got 'aho!' from peer.id === speaker()
     addDataHandler('pass-the-talking-stick', (peerId: string, data: RawPeerData) => {
@@ -67,42 +78,53 @@ export const TalkingCircle: Component = () => {
   return (
     <div class={styles.container}>
       <Show
-        when={connection()?.peerID}
+        when={!mediaError()}
         fallback={
-          <>
-            {console.log('TalkingCircle: No connection, showing loading')}
-            <Loading />
-          </>
+          <div class={styles.errorMessage}>
+            {mediaError()}
+          </div>
         }
       >
-        <div class={styles.mainContent}>
-          <Show
-            when={speaker()}
-            fallback={
-              <>
-                {console.log('TalkingCircle: No active speaker')}
-                <div class={styles.placeholder}>Нет активного спикера</div>
-              </>
-            }
-          >
-            <CenterVideo peerId={speaker() || ''} />
-            <Show when={speaker() === connection()?.peerID}>
-              <button onClick={handlePassTheTalkingStick}>Передать слово</button>
+        <Show
+          when={connection()?.peerID}
+          fallback={
+            <>
+              {console.log('TalkingCircle: No connection, showing loading')}
+              <Loading />
+            </>
+          }
+        >
+          <div class={styles.mainContent}>
+            <Show
+              when={speaker()}
+              fallback={
+                <>
+                  {console.log('TalkingCircle: No active speaker')}
+                  <Show when={connection()?.peerID} fallback={<Loading />}>
+                    <CenterVideo />
+                  </Show>
+                </>
+              }
+            >
+              <CenterVideo peerId={speaker() || ''} />
+              <Show when={speaker() === connection()?.peerID}>
+                <button onClick={handlePassTheTalkingStick}>Передать слово</button>
+              </Show>
             </Show>
-          </Show>
 
-          <div class={styles.videoCircle}>
-            <For each={connection()?.connectedPeers || []}>
-              {(peer: ConnectedPeer) => (
-                <ListenerCircle
-                  peerId={peer.id}
-                  me={connection()?.peerID === peer.id}
-                  isSpeaking={speaker() === peer.id}
-                />
-              )}
-            </For>
+            <div class={styles.videoCircle}>
+              <For each={connection()?.connectedPeers || []}>
+                {(peer: ConnectedPeer) => (
+                  <ListenerCircle
+                    peerId={peer.id}
+                    me={connection()?.peerID === peer.id}
+                    isSpeaking={speaker() === peer.id}
+                  />
+                )}
+              </For>
+            </div>
           </div>
-        </div>
+        </Show>
       </Show>
     </div>
   )

@@ -1,0 +1,24 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.disconnected {
+  background-color: #ff4444;
+}
+
+.connecting {
+  background-color: #ffbb33;
+}
+
+.connected {
+  background-color: #00C851;
+} 

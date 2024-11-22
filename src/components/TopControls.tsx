@@ -1,10 +1,12 @@
 import { Component, Show, createSignal } from 'solid-js'
+import { ConnectionIndicator } from '~/components/ConnectionIndicator'
 import { useNetwork } from '~/context/network'
 
 import styles from '~/styles/TopControls.module.css'
+import { Loading } from './Loading'
 
 export const TopControls: Component = () => {
-  const { connection, currentSwarm, connect, disconnect } = useNetwork()
+  const { connection, currentSwarm, connect, disconnect, setCurrentSwarm } = useNetwork()
   const [isEditing, setIsEditing] = createSignal(false)
   const [swarmInput, setSwarmInput] = createSignal('')
   const [isConnecting, setIsConnecting] = createSignal(false)
@@ -19,7 +21,7 @@ export const TopControls: Component = () => {
     return new Promise<boolean>((resolve) => {
       const checkConnection = () => {
         attempts++
-        
+
         try {
           if (sb.peerID) {
             resolve(true)
@@ -55,32 +57,37 @@ export const TopControls: Component = () => {
 
     console.log('TopControls: Attempting to join new swarm:', newSwarm)
     setIsConnecting(true)
-    
+
     try {
       // Отключаемся от текущего сворма
       await disconnect()
       console.log('TopControls: Disconnected from current swarm')
-      
+
       // Ждем немного для очистки состояния
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
       // Подключаемся и ждем установки соединения
       await connect()
-      
+
       // Проверяем состояние соединения с повторными попытками
       const isConnected = await waitForConnection()
-      
+
       if (!isConnected) {
         throw new Error('Failed to establish connection after multiple attempts')
       }
 
       // Дополнительная пауза перед присоединением к сворму
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       // Присоединяемся к новому сворму
       await connection()?.swarm(newSwarm)
       console.log('TopControls: Successfully joined swarm:', newSwarm)
-      window.location.hash = `#${newSwarm}`
+      if (history.pushState) {
+        history.pushState(null, '', `#${newSwarm}`)
+      } else {
+        location.hash = `#${newSwarm}`
+      }
+      setCurrentSwarm(newSwarm)
       setIsEditing(false)
     } catch (err) {
       console.error('TopControls: Failed to join swarm:', err)
@@ -89,42 +96,41 @@ export const TopControls: Component = () => {
     }
   }
 
+  const SwarmInput = () => (
+    <Show
+      when={connection()?.peerID}
+      fallback={
+        <Loading />
+      }
+    >
+      <Show
+        when={!isEditing()}
+        fallback={
+          <input
+            class={styles.swarmInput}
+            value={swarmInput()}
+            onInput={(e) => setSwarmInput(e.currentTarget.value)}
+            onKeyDown={handleSwarmChange}
+            onBlur={handleSwarmChange}
+            placeholder="Введите имя свoрма"
+            autofocus
+          />
+        }
+      >
+        <button
+          class={styles.swarmButton}
+          onClick={() => setIsEditing(true)}
+        >
+          #{currentSwarm()}
+        </button>
+      </Show>
+    </Show>
+  )
   return (
     <div class={styles.topControls}>
       <div class={styles.leftControls}>
-        <Show
-          when={connection()?.peerID}
-          fallback={
-            <button class={styles.swarmButton} onClick={connect}>
-              Подключиться
-            </button>
-          }
-        >
-          <Show
-            when={!isEditing()}
-            fallback={
-              <input
-                class={styles.swarmInput}
-                value={swarmInput()}
-                onInput={(e) => setSwarmInput(e.currentTarget.value)}
-                onKeyDown={handleSwarmChange}
-                onBlur={handleSwarmChange}
-                placeholder="Введите имя свoрма"
-                autofocus
-              />
-            }
-          >
-            <button
-              class={styles.swarmButton}
-              onClick={() => {
-                setSwarmInput(currentSwarm() || '')
-                setIsEditing(true)
-              }}
-            >
-              #{currentSwarm()}
-            </button>
-          </Show>
-        </Show>
+        <SwarmInput />
+        <ConnectionIndicator />
       </div>
     </div>
   )
