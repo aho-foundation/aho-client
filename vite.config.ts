@@ -6,9 +6,9 @@ import { PolyfillOptions, nodePolyfills } from 'vite-plugin-node-polyfills'
 const mobile = !!/android|ios/.exec(process.env.TAURI_ENV_PLATFORM ?? '')
 
 const polyfillOptions = {
-  include: ['path', 'stream', 'util'],
+  include: ['path', 'stream', 'util', 'ws'],
   exclude: ['http'],
-  globals: { Buffer: true },
+  globals: { Buffer: true, WebSocket: true },
   overrides: { fs: 'memfs' },
   protocolImports: true
 } as PolyfillOptions
@@ -36,6 +36,11 @@ export const viteConfig = defineConfig(async ({ mode }) => ({
           watch: {
             // 3. tell vite to ignore watching `src-tauri`
             ignored: ['**/src-tauri/**']
+          },
+          websocket: {
+            timeout: 30000,
+            pingInterval: 15000,
+            pingTimeout: 10000
           }
         }
       : undefined,
@@ -46,8 +51,7 @@ export const viteConfig = defineConfig(async ({ mode }) => ({
     // don't minify for debug builds
     minify: process.env.TAURI_ENV_DEBUG ? false : 'esbuild',
     // produce sourcemaps for debug builds
-    sourcemap: !!process.env.TAURI_ENV_DEBUG,
-    ssr: false
+    sourcemap: !!process.env.TAURI_ENV_DEBUG
   }
 }) as ViteCustomizableConfig)
 

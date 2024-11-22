@@ -102,7 +102,11 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
         trackers,
         clientTimeout: 30000,
         clientMaxRetries: 3,
-        clientBlacklistDuration: 60000
+        clientBlacklistDuration: 60000,
+        wsOpts: {
+          handshakeTimeout: 30000,
+          maxPayload: 65536
+        }
       } as SBClientOptions)
 
       console.log('NetworkProvider: Switchboard created, ID:', sb.peerID)
@@ -111,9 +115,16 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
         console.log('NetworkProvider: New peer discovered:', peer)
         peer.on('connect', () => {
           console.log(`NetworkProvider: Peer ${peer.id} connected`)
-          if (switchboard()?.peerID === speaker()) peer.send('welcome')
+          if (switchboard()?.peerID === speaker()) {
+            console.log(`NetworkProvider: Sending welcome to ${peer.id}`)
+            peer.send('welcome')
+          }
         })
-        peer.on('data', (data: RawPeerData) => handleRawPeerData(peer.id, data))
+        
+        peer.on('data', (data: RawPeerData) => {
+          console.log(`NetworkProvider: Received data from ${peer.id}:`, data)
+          handleRawPeerData(peer.id, data)
+        })
         peer.on('stream', (stream: MediaStream) => setStreams((prev) => ({ ...prev, [peer.id]: stream })))
         peer.on('close', () => {
           console.log(`Peer ${peer.id} disconnected`)
@@ -147,6 +158,7 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
       })
     } catch (err) {
       console.error('NetworkProvider: Connection failed with error:', err)
+      setTimeout(connect, 5000)
       throw err
     }
   }
@@ -165,7 +177,12 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
   })
 
   const addDataHandler = (name: string, handler: (peerId: string, data: RawPeerData) => void) => {
-    setDataHandlers((prev) => ({ ...prev, [name]: handler }))
+    console.log('NetworkProvider: Adding data handler:', name)
+    setDataHandlers((prev) => {
+      const newHandlers = { ...prev, [name]: handler }
+      console.log('NetworkProvider: Current handlers:', Object.keys(newHandlers))
+      return newHandlers
+    })
   }
 
   const broadcast = (data: RawPeerData) => {
@@ -174,11 +191,15 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
     if (peers) {
       const peerIds = Object.keys(peers)
       console.log('Network: Sending to peers:', peerIds)
-      Object.values(peers).forEach((p: ConnectedPeer) => {
-        console.log('Network: Sending to peer:', p.id)
-        p.send(data)
-      })
-      console.log('Network: Broadcast complete')
+      try {
+        Object.values(peers).forEach((p: ConnectedPeer) => {
+          console.log('Network: Sending to peer:', p.id)
+          p.send(data)
+        })
+        console.log('Network: Broadcast complete')
+      } catch (err) {
+        console.error('Network: Broadcast failed:', err)
+      }
     } else {
       console.warn('Network: No connected peers')
     }
