@@ -29,20 +29,8 @@ export const PeerSelector: Component<PeerSelectorProps> = (props) => {
   }
 
   const handleClose = () => {
-    if (selectedPeers().length === 0) {
-      handleError('Выберите хотя бы одного получателя')
-      return
-    }
-
     setSelectedPeers([])
     props.onClose()
-  }
-
-  const handleError = (errorMessage: string) => {
-    setError(errorMessage)
-    setTimeout(() => {
-      setError(null)
-    }, 3000)
   }
 
   return (

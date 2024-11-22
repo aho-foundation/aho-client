@@ -9,11 +9,9 @@
 
 .chatInput {
   flex: 1;
-  min-height: 40px;
-  max-height: 120px;
   padding: 10px 16px;
   border: 1px solid var(--color-gray-300);
-  border-radius: 20px;
+  border-radius: 2px;
   background: var(--color-gray-100);
   font-size: 14px;
   line-height: 1.4;
@@ -31,7 +29,6 @@
 /* Кнопка отправки */
 .sendButton {
   width: 40px;
-  height: 40px;
   padding: 0;
   border: none;
   border-radius: 50%;

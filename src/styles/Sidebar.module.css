@@ -18,8 +18,8 @@
 
 .burgerWrapper {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: 0px;
+  right: 0px;
   z-index: 1001;
 }
 
@@ -32,4 +32,19 @@
   .sidebar.open {
     transform: translateX(-100%);
   }
+}
+
+.connectionStatus {
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.connecting {
+  color: var(--color-warning);
+}
+
+.connected {
+  color: var(--color-success);
 } 

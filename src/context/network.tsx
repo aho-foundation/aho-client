@@ -142,12 +142,12 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
 
         peer.on('error', console.error)
       })
-
+      const smarmName = window.location.hash.split('#')[1] || 'welcome'
       console.log('NetworkProvider: Attempting to join swarm "welcome"')
-      await sb.swarm('welcome')
+      await sb.swarm(smarmName)
       console.log('NetworkProvider: Successfully joined swarm')
 
-      setCurrentSwarm('welcome')
+      setCurrentSwarm(smarmName)
       setSwitchboard(sb)
 
       // Проверяем состояние после подключения
