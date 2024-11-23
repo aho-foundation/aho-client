@@ -10,7 +10,8 @@
     "serve": "vinxi preview",
     "tauri": "tauri",
     "fix": "npx @biomejs/biome check src/. --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "vercel-build": "npm run build"
   },
   "license": "MIT",
   "dependencies": {
