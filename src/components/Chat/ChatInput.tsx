@@ -128,7 +128,6 @@ export const ChatInput: Component = () => {
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseLeave={() => {
-          console.log('handleMouseLeave: Clearing long press')
           if (pressTimer()) {
             clearTimeout(pressTimer() as NodeJS.Timeout)
             setPressTimer(null)

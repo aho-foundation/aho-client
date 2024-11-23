@@ -29,50 +29,95 @@ export const TalkingCircle: Component = () => {
       setMediaError('Пожалуйста, разрешите доступ к камере и микрофону')
     }
 
+    // Инициализируем order при монтировании
+    const sb = connection()
+    if (sb) {
+      console.log('TalkingCircle: Initializing order with connected peers')
+      const connectedPeers = sb.connectedPeers.map((peer) => peer.id)
+      if (connectedPeers.length > 0) {
+        setOrder(connectedPeers)
+        console.log('TalkingCircle: Initial order set:', connectedPeers)
+      }
+    }
+
     // data handler got 'aho!' from peer.id === speaker()
     addDataHandler('pass-the-talking-stick', (peerId: string, data: RawPeerData) => {
+      console.log('TalkingCircle: Received pass-the-talking-stick from', peerId, 'data:', data)
       if (typeof data === 'string') {
         try {
           const parsed = JSON.parse(data) as AhoMessage
+          console.log('TalkingCircle: Parsed message:', parsed)
           if (peerId === speaker() && parsed.kind === 'aho') {
-            console.log('aho! from speaker, set order', peerId)
+            console.log('TalkingCircle: Valid aho message from speaker', peerId)
             const newOrder = parsed.order
             if (newOrder) {
+              console.log('TalkingCircle: Setting new order:', newOrder)
               setOrder(newOrder)
               const speakerIndex = newOrder.indexOf(peerId)
-              if (speakerIndex + 1 === newOrder.length) {
-                setSpeaker(newOrder[0])
-              } else {
-                setSpeaker(newOrder[speakerIndex + 1])
-              }
+              const nextSpeaker =
+                speakerIndex + 1 === newOrder.length ? newOrder[0] : newOrder[speakerIndex + 1]
+              console.log('TalkingCircle: Setting next speaker:', nextSpeaker)
+              setSpeaker(nextSpeaker)
             }
+          } else {
+            console.log('TalkingCircle: Invalid aho message - wrong speaker or kind', {
+              currentSpeaker: speaker(),
+              messagePeerId: peerId,
+              messageKind: parsed.kind
+            })
           }
         } catch (e) {
-          console.warn('cant parse data', e)
+          console.warn('TalkingCircle: Failed to parse message:', e)
         }
       }
     })
+
     // data handler got 'aho' from non-speaker
     addDataHandler('aho', (peerId: string, data: RawPeerData) => {
+      console.log('TalkingCircle: Received aho from', peerId, 'data:', data)
       if (typeof data === 'string') {
-        const parsed = JSON.parse(data as string) as AhoMessage
-        if (peerId !== speaker() && parsed.kind === 'aho') {
-          // TODO: update classname for animation
-          console.log('aho! from non-speaker', peerId)
+        try {
+          const parsed = JSON.parse(data as string) as AhoMessage
+          if (peerId !== speaker() && parsed.kind === 'aho') {
+            console.log('TalkingCircle: Valid aho from non-speaker', peerId)
+            // TODO: update classname for animation
+          } else {
+            console.log('TalkingCircle: Invalid aho - wrong conditions', {
+              isSpeaker: peerId === speaker(),
+              messageKind: parsed.kind
+            })
+          }
+        } catch (e) {
+          console.warn('TalkingCircle: Failed to parse aho message:', e)
         }
       }
     })
-    // data handler got 'welcome' from non-speaker, answering the connection announce
+
+    // data handler got 'welcome' from speaker
     addDataHandler('welcome', (peerId: string, data: RawPeerData) => {
+      console.log('TalkingCircle: Received welcome from', peerId, 'data:', data)
       if (typeof data === 'string' && data === 'welcome') {
-        console.log('welcome! from the one claiming to be a speaker', peerId)
+        console.log('TalkingCircle: Setting speaker to', peerId)
         setSpeaker(peerId)
       }
     })
   })
 
   const handlePassTheTalkingStick = () => {
-    broadcast(JSON.stringify({ kind: 'aho', order: order() }))
+    const currentOrder = order()
+    const sb = connection()
+    if (!(sb && currentOrder.length > 0)) {
+      console.warn('TalkingCircle: Cannot pass stick - no connection or empty order')
+      return
+    }
+
+    // Обновляем порядок, добавляя новых пиров
+    const updatedOrder = Array.from(new Set([...currentOrder, ...sb.connectedPeers.map((peer) => peer.id)]))
+    console.log('TalkingCircle: Broadcasting aho with order:', updatedOrder)
+
+    const message = JSON.stringify({ kind: 'aho', order: updatedOrder })
+    broadcast(message)
+    setOrder(updatedOrder)
   }
 
   return (
