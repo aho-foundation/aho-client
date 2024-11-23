@@ -213,8 +213,8 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
       const trackerUrl = await discoveryTracker()
       if (trackerUrl) {
         console.log('NetworkProvider: Adding local tracker', trackerUrl)
-        trackers.push({ 
-          uri: trackerUrl, 
+        trackers.push({
+          uri: trackerUrl,
           isNative: true,
           customPeerOpts
         } as TrackerOptions)
@@ -231,7 +231,7 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
       // Подключаемся к рою
       const swarmName = window.location.hash.split('#')[1] || 'welcome'
       console.log('NetworkProvider: Attempting to join swarm:', swarmName)
-      
+
       await sb.swarm(swarmName)
       console.log('NetworkProvider: Successfully joined swarm')
       setCurrentSwarm(swarmName)
@@ -240,7 +240,7 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
       // Обработка событий пиров
       sb.on('peer', (peer: ConnectedPeer) => {
         console.log('NetworkProvider: New peer discovered:', peer)
-        
+
         peer.on('connect', () => {
           console.log('NetworkProvider: Peer connected:', peer.id)
           setDisconnected((prev) => {
@@ -287,7 +287,6 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
 
         peer.on('error', console.error)
       })
-
     } catch (err) {
       console.error('NetworkProvider: Connection failed:', err)
       throw err
