@@ -18,15 +18,15 @@
   
   @media (max-width: 480px) {
     .videoWrapper {
-      width: 360px;
-      height: 360px;
+      width: 330px;
+      height: 330px;
     }
   }
 
   @media (min-width: 480px) {
     .videoWrapper {
-      width: 480px;
-      height: 480px;
+      width: 440px;
+      height: 440px;
     }
   }
 
