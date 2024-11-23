@@ -46,31 +46,34 @@ export const discoveryTracker = async () => {
       return { uri: 'ws://localhost:8080', isNativeServer: true } as TrackerOptions
     }
   } else {
-    // Для браузера пробуем сначала Vercel трекер
+    // Для браузера используем Vercel трекер
     try {
-      const uri = `https://${window.location.host}`
+      const uri = window.location.origin
       const vercelTracker = {
         uri: `${uri}/api/tracker`,
-        isRequired: false,
+        isRequired: false, // Делаем НЕ обязательным
         customPeerOpts,
         connectTimeoutMs: 15000,
-        maxReconnectAttempts: 3
+        maxReconnectAttempts: 3,
+        announceMs: 120000,
+        wsOpts: {
+          handshakeTimeout: 30000,
+          maxPayload: 65536
+        }
       } as TrackerOptions
 
-      // Проверяем доступность Vercel трекера
+      // Проверяем доступность трекера
       const response = await fetch(`${uri}/api/tracker`)
-      console.log('Vercel трекер ответ:', response)
-      if (response.ok) {
-        console.log('Vercel трекер доступен')
-        return vercelTracker
+      if (!response.ok) {
+        throw new Error('Vercel tracker is not available')
       }
-    } catch (e) {
-      console.warn('Vercel трекер недоступен:', e)
-    }
 
-    // Если Vercel трекер недоступен, используем дефолтные
-    console.log('Используем резервные трекеры')
-    return (await Switchboard.defaultTrackers())[1] as TrackerOptions
+      console.log('Vercel трекер доступен:', uri)
+      return vercelTracker
+    } catch (e) {
+      console.warn('Vercel трекер недоступен, используем встроенные трекеры:', e)
+      return null // Возвращаем null чтобы использовать встроенные трекеры
+    }
   }
 }
 
@@ -104,61 +107,45 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
     }
   }
 
-  // Добавим список проверенных трекеров
-  const RELIABLE_TRACKERS = [
-    'wss://tracker.openwebtorrent.com',
-    'wss://tracker.btorrent.xyz',
-    `https://${window.location.host}/api/tracker`
-  ]
-
   const connect = async () => {
     console.log('NetworkProvider: Starting connection process')
     try {
-      // Получаем все трекеры
-      const defaultTrackers = await Switchboard.defaultTrackers()
-      const extraTrackers = await Switchboard.getExtraTrackers()
-      const vercelTracker = {
-        uri: 'wss://your-vercel-app.vercel.app', // Замените на ваш домен
-        isRequired: false,
-        customPeerOpts,
-        connectTimeoutMs: 15000,
-        maxReconnectAttempts: 3
-      }
+      const tracker = await discoveryTracker()
+      console.log('NetworkProvider: Using tracker:', tracker)
 
-      // Фильтруем только надежные трекеры и добавляем Vercel первым
-      const trackers: TrackerOptions[] = [vercelTracker, ...defaultTrackers, ...extraTrackers]
-        .filter((t) => RELIABLE_TRACKERS.includes(t.uri))
-        .map((t) => ({
-          ...t,
-          customPeerOpts,
-          connectTimeoutMs: 15000,
-          maxReconnectAttempts: 3
-        }))
-
-      console.log('NetworkProvider: Using trackers:', trackers)
-
-      const sb = new Switchboard('aho-network', {
-        trackers,
+      const sbOptions: SBClientOptions = {
         clientTimeout: 30000,
         clientMaxRetries: 3,
-        clientBlacklistDuration: 30000,
-        skipExtraTrackers: true,
-        wsOpts: {
-          handshakeTimeout: 30000,
-          maxPayload: 65536
-        }
-      } as SBClientOptions)
+        clientBlacklistDuration: 30000
+      }
+
+      // Если есть наш трекер - используем только его, иначе используем встроенные
+      if (tracker) {
+        sbOptions.trackers = [tracker]
+        sbOptions.skipExtraTrackers = true
+      } else {
+        sbOptions.skipExtraTrackers = false // Разрешаем использовать встроенные трекеры
+      }
+
+      const sb = new Switchboard('aho-network', sbOptions)
 
       // Добавляем обработку переподключения при потере трекера
       sb.on('warn', (err) => {
         if (err.message.includes('tracker disconnected')) {
           console.warn('NetworkProvider: Tracker disconnected, attempting to reconnect...')
           // Пробуем переподключиться через 5 секунд
-          setTimeout(() => {
+          setTimeout(async () => {
             if (switchboard() === sb) {
-              const swarmName = currentSwarm() || 'welcome'
-              sb.swarm(swarmName).catch(console.error)
-              location.hash = `#${swarmName}`
+              try {
+                const swarmName = currentSwarm() || 'welcome'
+                await sb.swarm(swarmName)
+                location.hash = `#${swarmName}`
+              } catch (e) {
+                console.error('Failed to reconnect:', e)
+                // Если не удалось переподключиться, пробуем заново через connect()
+                disconnect()
+                await connect()
+              }
             }
           }, 5000)
         }
@@ -280,6 +267,7 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
       })
     } catch (err) {
       console.error('NetworkProvider: Connection failed with error:', err)
+      // Пробуем переподключиться через 5 секунд
       setTimeout(connect, 5000)
       throw err
     }
