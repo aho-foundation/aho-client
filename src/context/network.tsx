@@ -37,16 +37,39 @@ export const discoveryTracker = async () => {
     try {
       const { invoke } = await import('@tauri-apps/api/core')
       const serverUrl = await invoke('find_local_server')
-      console.log('Найден существующий сервер:', serverUrl)
+      console.log('Найден локальный сервер:', serverUrl)
       return { uri: serverUrl, isNativeServer: true } as TrackerOptions
     } catch {
-      console.log('Сервер не найден, запускаем свой')
+      console.log('Локальный сервер не найден, запускаем свой')
       const { invoke } = await import('@tauri-apps/api/core')
       await invoke('start_peer_server')
       return { uri: 'ws://localhost:8080', isNativeServer: true } as TrackerOptions
     }
   } else {
-    // Для браузера используем API трекер или дефолтные
+    // Для браузера пробуем сначала Vercel трекер
+    try {
+      const uri = `https://${window.location.host}`
+      const vercelTracker = {
+        uri: `${uri}/api/tracker`,
+        isRequired: false,
+        customPeerOpts,
+        connectTimeoutMs: 15000,
+        maxReconnectAttempts: 3
+      } as TrackerOptions
+
+      // Проверяем доступность Vercel трекера
+      const response = await fetch(`${uri}/api/tracker`)
+      console.log('Vercel трекер ответ:', response)
+      if (response.ok) {
+        console.log('Vercel трекер доступен')
+        return vercelTracker
+      }
+    } catch (e) {
+      console.warn('Vercel трекер недоступен:', e)
+    }
+
+    // Если Vercel трекер недоступен, используем дефолтные
+    console.log('Используем резервные трекеры')
     return (await Switchboard.defaultTrackers())[1] as TrackerOptions
   }
 }
@@ -82,7 +105,11 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
   }
 
   // Добавим список проверенных трекеров
-  const RELIABLE_TRACKERS = ['wss://tracker.openwebtorrent.com', 'wss://tracker.btorrent.xyz']
+  const RELIABLE_TRACKERS = [
+    'wss://tracker.openwebtorrent.com',
+    'wss://tracker.btorrent.xyz',
+    `https://${window.location.host}/api/tracker`
+  ]
 
   const connect = async () => {
     console.log('NetworkProvider: Starting connection process')
@@ -90,19 +117,25 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
       // Получаем все трекеры
       const defaultTrackers = await Switchboard.defaultTrackers()
       const extraTrackers = await Switchboard.getExtraTrackers()
+      const vercelTracker = {
+        uri: 'wss://your-vercel-app.vercel.app', // Замените на ваш домен
+        isRequired: false,
+        customPeerOpts,
+        connectTimeoutMs: 15000,
+        maxReconnectAttempts: 3
+      }
 
-      // Фильтруем только надежные трекеры
-      const trackers: TrackerOptions[] = [...defaultTrackers, ...extraTrackers]
+      // Фильтруем только надежные трекеры и добавляем Vercel первым
+      const trackers: TrackerOptions[] = [vercelTracker, ...defaultTrackers, ...extraTrackers]
         .filter((t) => RELIABLE_TRACKERS.includes(t.uri))
         .map((t) => ({
-          uri: t.uri,
-          isRequired: false,
+          ...t,
           customPeerOpts,
-          connectTimeoutMs: 15000, // Увеличиваем таймаут
+          connectTimeoutMs: 15000,
           maxReconnectAttempts: 3
         }))
 
-      console.log('NetworkProvider: Using filtered trackers:', trackers)
+      console.log('NetworkProvider: Using trackers:', trackers)
 
       const sb = new Switchboard('aho-network', {
         trackers,

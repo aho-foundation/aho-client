@@ -128,8 +128,8 @@ export const handler = (req, res) => {
     const { url, headers } = req
     const parsedUrl = new URL(url, `https://${headers.host}`)
     const infoHash = parsedUrl.searchParams.get('info_hash')
-
-    switch (parsedUrl.pathname) {
+    const path = parsedUrl.pathname.replace('/api/tracker', '')
+    switch (path) {
       case '/':
         res.json({
           message: 'Hello, World!'
