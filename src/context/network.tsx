@@ -59,19 +59,9 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
   >({} as Record<string, (peerId: string, data: RawPeerData) => void>)
 
   const handleRawPeerData = (peerId: string, data: RawPeerData) => {
-    console.log('Получены сырые данные от пира:', peerId, data)
-    if (typeof data === 'string') {
-      let parsed = data
-      try {
-        parsed = JSON.parse(data)
-        console.log('Разобранные данные:', parsed)
-      } catch (e) {
-        console.warn('Не удалось разобрать данные:', e)
-      }
-      Object.entries(dataHandlers()).forEach(([name, handler]) => {
-        console.log('Вызов обработчика:', name)
-        handler(peerId, data)
-      })
+    console.log('Получены данные от пира:', peerId, data)
+    for (const handler of Object.values(dataHandlers())) {
+      handler(peerId, data)
     }
   }
 

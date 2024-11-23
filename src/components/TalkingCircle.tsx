@@ -33,7 +33,7 @@ export const TalkingCircle: Component = () => {
     addDataHandler('pass-the-talking-stick', (peerId: string, data: RawPeerData) => {
       if (typeof data === 'string') {
         try {
-          const parsed = JSON.parse(data as string) as AhoMessage
+          const parsed = JSON.parse(data) as AhoMessage
           if (peerId === speaker() && parsed.kind === 'aho') {
             console.log('aho! from speaker, set order', peerId)
             const newOrder = parsed.order
