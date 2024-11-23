@@ -97,12 +97,7 @@ export const TopControls: Component = () => {
   }
 
   const SwarmInput = () => (
-    <Show
-      when={connection()?.peerID}
-      fallback={
-        <Loading />
-      }
-    >
+    <Show when={connection()?.peerID} fallback={<Loading />}>
       <Show
         when={!isEditing()}
         fallback={
@@ -117,10 +112,7 @@ export const TopControls: Component = () => {
           />
         }
       >
-        <button
-          class={styles.swarmButton}
-          onClick={() => setIsEditing(true)}
-        >
+        <button class={styles.swarmButton} onClick={() => setIsEditing(true)}>
           #{currentSwarm()}
         </button>
       </Show>

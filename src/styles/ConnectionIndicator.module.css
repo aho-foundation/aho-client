@@ -21,4 +21,48 @@
 
 .connected {
   background-color: #00C851;
+}
+
+/* Пульсация при поиске пиров */
+@keyframes searchPulse {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+.searching {
+  animation: searchPulse 2s ease-in-out infinite;
+}
+
+/* Яркая вспышка при announce */
+@keyframes announcePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 200, 81, 0.4);
+    background-color: #00ff62;
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(0, 200, 81, 0);
+    background-color: #00C851;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 200, 81, 0);
+    background-color: #00C851;
+  }
+}
+
+.announce {
+  animation: announcePulse 0.5s ease-out;
+}
+
+/* Комбинируем анимации */
+.searching.announce {
+  animation: 
+    searchPulse 2s ease-in-out infinite,
+    announcePulse 0.5s ease-out;
 } 

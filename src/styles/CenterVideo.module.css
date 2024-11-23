@@ -10,12 +10,31 @@
   }
   
   .videoWrapper {
-    width: 420px;
-    height: 420px;
     position: relative;
     border-radius: 50%;
     overflow: hidden;
     background: #000;
+  }
+  
+  @media (max-width: 480px) {
+    .videoWrapper {
+      width: 360px;
+      height: 360px;
+    }
+  }
+
+  @media (min-width: 480px) {
+    .videoWrapper {
+      width: 480px;
+      height: 480px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .videoWrapper {
+      width: 640px;
+      height: 640px;
+    }
   }
   
   .centerVideoContainer video {

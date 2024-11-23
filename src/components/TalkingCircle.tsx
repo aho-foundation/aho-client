@@ -77,14 +77,7 @@ export const TalkingCircle: Component = () => {
 
   return (
     <div class={styles.container}>
-      <Show
-        when={!mediaError()}
-        fallback={
-          <div class={styles.errorMessage}>
-            {mediaError()}
-          </div>
-        }
-      >
+      <Show when={!mediaError()} fallback={<div class={styles.errorMessage}>{mediaError()}</div>}>
         <Show
           when={connection()?.peerID}
           fallback={

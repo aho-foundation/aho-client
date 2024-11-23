@@ -6,6 +6,7 @@ export const ConnectionIndicator: Component = () => {
   const { connection } = useNetwork()
   const [status, setStatus] = createSignal<'disconnected' | 'connecting' | 'connected'>('disconnected')
   const [tooltip, setTooltip] = createSignal('')
+  const [isAnnounce, setIsAnnounce] = createSignal(false)
 
   const updateStatus = () => {
     const sb = connection()
@@ -33,12 +34,32 @@ export const ConnectionIndicator: Component = () => {
   onMount(() => {
     updateStatus()
     const interval = setInterval(updateStatus, 2000)
-    onCleanup(() => clearInterval(interval))
+
+    const sb = connection()
+    if (sb) {
+      const announceHandler = () => {
+        setIsAnnounce(true)
+        setTimeout(() => setIsAnnounce(false), 500)
+      }
+      
+      sb.on('tracker-connect', announceHandler)
+    }
+
+    onCleanup(() => {
+      clearInterval(interval)
+    })
   })
 
   return (
     <div class={styles.indicator} title={tooltip()}>
-      <div class={`${styles.dot} ${styles[status()]}`} />
+      <div 
+        class={`
+          ${styles.dot} 
+          ${styles[status()]} 
+          ${status() === 'connecting' ? styles.searching : ''} 
+          ${isAnnounce() ? styles.announce : ''}
+        `} 
+      />
     </div>
   )
 }

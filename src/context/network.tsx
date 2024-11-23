@@ -1,5 +1,8 @@
-import { Accessor, JSX, createContext, createEffect, createSignal, on, onCleanup, useContext } from 'solid-js'
+import { Accessor, JSX, createContext, createSignal, onCleanup, useContext } from 'solid-js'
 import { ConnectedPeer, SBClientOptions, Switchboard, TrackerOptions } from 'switchboard.js'
+import { enableLogging } from 'switchboard.js'
+
+enableLogging(true)
 
 export type RawPeerData = string | ArrayBuffer | Blob | ArrayBufferView
 
@@ -17,17 +20,14 @@ interface NetworkContextType {
   setSpeaker: (peerId: string) => void
 }
 
-const workingDefaultTracker = {
-  uri: 'wss://tracker.openwebtorrent.com',
-  customPeerOpts: {
-    trickleICE: false,
-    trickleTimeout: 15000,
-    rtcPeerOpts: {
-      iceCandidatePoolSize: 10,
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    }
+const customPeerOpts = {
+  trickleICE: false,
+  trickleTimeout: 15000,
+  rtcPeerOpts: {
+    iceCandidatePoolSize: 10,
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
   }
-} as TrackerOptions
+}
 
 export const discoveryTracker = async () => {
   // Проверяем, запущено ли приложение в Tauri
@@ -38,16 +38,16 @@ export const discoveryTracker = async () => {
       const { invoke } = await import('@tauri-apps/api/core')
       const serverUrl = await invoke('find_local_server')
       console.log('Найден существующий сервер:', serverUrl)
-      return serverUrl
+      return { uri: serverUrl, isNativeServer: true } as TrackerOptions
     } catch {
       console.log('Сервер не найден, запускаем свой')
       const { invoke } = await import('@tauri-apps/api/core')
       await invoke('start_peer_server')
-      return 'ws://localhost:8080'
+      return { uri: 'ws://localhost:8080', isNativeServer: true } as TrackerOptions
     }
   } else {
-    // Для браузера используем дефолтный трекер
-    return workingDefaultTracker.uri
+    // Для браузера используем API трекер или дефолтные
+    return (await Switchboard.defaultTrackers())[1] as TrackerOptions
   }
 }
 
@@ -81,75 +81,164 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
     }
   }
 
+  // Добавим список проверенных трекеров
+  const RELIABLE_TRACKERS = ['wss://tracker.openwebtorrent.com', 'wss://tracker.btorrent.xyz']
+
   const connect = async () => {
     console.log('NetworkProvider: Starting connection process')
     try {
-      console.log('NetworkProvider: Getting tracker URL')
-      const trackerUrl = await discoveryTracker()
-      console.log('NetworkProvider: Tracker URL received:', trackerUrl)
+      // Получаем все трекеры
+      const defaultTrackers = await Switchboard.defaultTrackers()
+      const extraTrackers = await Switchboard.getExtraTrackers()
 
-      const trackers = [workingDefaultTracker]
+      // Фильтруем только надежные трекеры
+      const trackers: TrackerOptions[] = [...defaultTrackers, ...extraTrackers]
+        .filter((t) => RELIABLE_TRACKERS.includes(t.uri))
+        .map((t) => ({
+          uri: t.uri,
+          isRequired: false,
+          customPeerOpts,
+          connectTimeoutMs: 15000, // Увеличиваем таймаут
+          maxReconnectAttempts: 3
+        }))
 
-      if (trackerUrl !== workingDefaultTracker.uri) {
-        console.log('NetworkProvider: Adding local tracker')
-        trackers.push({
-          uri: trackerUrl as string,
-          customPeerOpts: workingDefaultTracker.customPeerOpts
-        })
-      }
+      console.log('NetworkProvider: Using filtered trackers:', trackers)
 
-      console.log('NetworkProvider: Creating Switchboard with trackers:', trackers)
       const sb = new Switchboard('aho-network', {
         trackers,
         clientTimeout: 30000,
         clientMaxRetries: 3,
-        clientBlacklistDuration: 60000,
+        clientBlacklistDuration: 30000,
+        skipExtraTrackers: true,
         wsOpts: {
           handshakeTimeout: 30000,
           maxPayload: 65536
         }
       } as SBClientOptions)
 
-      console.log('NetworkProvider: Switchboard created, ID:', sb.peerID)
+      // Добавляем обработку переподключения при потере трекера
+      sb.on('warn', (err) => {
+        if (err.message.includes('tracker disconnected')) {
+          console.warn('NetworkProvider: Tracker disconnected, attempting to reconnect...')
+          // Пробуем переподключиться через 5 секунд
+          setTimeout(() => {
+            if (switchboard() === sb) {
+              const swarmName = currentSwarm() || 'welcome'
+              sb.swarm(swarmName).catch(console.error)
+              location.hash = `#${swarmName}`
+            }
+          }, 5000)
+        }
+      })
+
+      // Мониторим состояние каждого трекера
+      sb.on('tracker-connect', (tracker) => {
+        console.log('NetworkProvider: Tracker connected:', tracker.uri)
+      })
+
+      sb.on('connected', (openTrackers) => {
+        console.log('NetworkProvider: Connected trackers:', openTrackers.length)
+        openTrackers.forEach((t) => console.log('- Connected tracker:', t))
+      })
+
+      sb.on('kill', (err) => {
+        console.error('NetworkProvider: Connection killed:', err)
+        setSwitchboard(null)
+      })
+
+      sb.on('peer-seen', (peerId) => {
+        console.log('NetworkProvider: Peer discovered:', peerId)
+        // Проверяем, не наш ли это ID
+        if (peerId === sb.peerID) {
+          console.log('NetworkProvider: Skipping self peer')
+          return
+        }
+      })
+
+      sb.on('peer-error', (err) => {
+        console.error('NetworkProvider: Peer connection error:', err)
+      })
+
+      sb.on('peer-blacklisted', (peer) => {
+        console.warn('NetworkProvider: Peer blacklisted:', peer.id)
+      })
 
       sb.on('peer', (peer: ConnectedPeer) => {
         console.log('NetworkProvider: New peer discovered:', peer)
+
+        // Инициируем подключение
+        if (!peer.isConnected) {
+          console.log(`NetworkProvider: Initiating connection to peer ${peer.id}`)
+
+        }
+
         peer.on('connect', () => {
-          console.log(`NetworkProvider: Peer ${peer.id} connected`)
-          if (switchboard()?.peerID === speaker()) {
-            console.log(`NetworkProvider: Sending welcome to ${peer.id}`)
-            peer.send('welcome')
+          console.log(`NetworkProvider: Peer ${peer.id} connected, state:`, {
+            connected: peer.isConnected,
+            readyState: peer.isReady
+          })
+
+          // Ждем готовности канала данных
+          if (peer.isReady) onPeerReady(peer, sb)
+        })
+
+        // Улучшаем обработку данных
+        peer.on('data', (data: RawPeerData) => {
+          console.log(`NetworkProvider: Raw data from ${peer.id}:`, data)
+
+          // Для текстовых данных
+          if (typeof data === 'string') {
+            try {
+              const parsed = JSON.parse(data)
+              console.log('NetworkProvider: Parsed data:', parsed)
+              handleRawPeerData(peer.id, data)
+            } catch (_e) {
+              console.log('NetworkProvider: Raw text data:', data)
+              handleRawPeerData(peer.id, data)
+            }
+          }
+          // Для бинарных данных
+          else if (data instanceof ArrayBuffer || data instanceof Blob) {
+            console.log('NetworkProvider: Binary data received')
+            handleRawPeerData(peer.id, data)
           }
         })
 
-        peer.on('data', (data: RawPeerData) => {
-          console.log(`NetworkProvider: Received data from ${peer.id}:`, data)
-          handleRawPeerData(peer.id, data)
+        // Добавляем обработку ошибок соединения
+        peer.on('error', (err) => {
+          console.error(`NetworkProvider: Peer ${peer.id} error:`, err)
         })
-        peer.on('stream', (stream: MediaStream) => setStreams((prev) => ({ ...prev, [peer.id]: stream })))
+
+        // Улучшаем обработку закрытия соединения
         peer.on('close', () => {
-          console.log(`Peer ${peer.id} disconnected`)
+          console.log(`NetworkProvider: Peer ${peer.id} disconnected`)
+          setDisconnected((prev) => {
+            const newSet = new Set(prev)
+            newSet.add(peer.id)
+            return newSet
+          })
+
+          // Очищаем стрим
           setStreams((prev) => {
             const newStreams = { ...prev }
             delete newStreams[peer.id]
             return newStreams
           })
-          setDisconnected((prev) => prev.add(peer.id))
         })
-
-        peer.on('handshake', (message: string) => {
-          console.log(`Peer ${peer.id} handshake:`, message)
-        })
-
-        peer.on('error', console.error)
       })
-      const smarmName = window.location.hash.split('#')[1] || 'welcome'
-      console.log('NetworkProvider: Attempting to join swarm "welcome"')
-      await sb.swarm(smarmName)
-      console.log('NetworkProvider: Successfully joined swarm')
+      const swarmName = window.location.hash.split('#')[1] || 'welcome'
+      console.log('NetworkProvider: Attempting to join swarm:', swarmName)
 
-      setCurrentSwarm(smarmName)
-      setSwitchboard(sb)
+      try {
+        await sb.swarm(swarmName)
+        console.log('NetworkProvider: Successfully joined swarm')
+        setCurrentSwarm(swarmName)
+        location.hash = `#${swarmName}`
+        setSwitchboard(sb)
+      } catch (swarmError) {
+        console.error('NetworkProvider: Failed to join swarm:', swarmError)
+        throw swarmError
+      }
 
       // Проверяем состояние после подключения
       console.log('NetworkProvider: Connection state:', {
@@ -188,26 +277,72 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
 
   const broadcast = (data: RawPeerData) => {
     console.log('Network: Broadcasting message:', data)
-    const peers = switchboard()?.connectedPeers
-    if (peers) {
-      const peerIds = Object.keys(peers)
-      console.log('Network: Sending to peers:', peerIds)
-      try {
-        Object.values(peers).forEach((p: ConnectedPeer) => {
-          console.log('Network: Sending to peer:', p.id)
-          p.send(data)
-        })
-        console.log('Network: Broadcast complete')
-      } catch (err) {
-        console.error('Network: Broadcast failed:', err)
-      }
-    } else {
-      console.warn('Network: No connected peers')
+    const sb = switchboard()
+    if (!sb) {
+      console.warn('Network: No switchboard connection')
+      return
     }
+
+    const peers = sb.connectedPeers
+    if (peers.length === 0) {
+      console.warn('Network: No connected peers')
+      return
+    }
+
+    console.log(
+      'Network: Connected peers:',
+      peers.map((p) => ({
+        id: p.id,
+        connected: p.isConnected,
+        readyState: p.isReady
+      }))
+    )
+
+    // Фильтруем только готовые к отправке пиры
+    const readyPeers = peers.filter((p) => p.isConnected && p.isReady)
+
+    if (readyPeers.length === 0) {
+      console.warn('Network: No ready peers')
+      return
+    }
+
+    readyPeers.forEach((peer) => {
+      try {
+        console.log(`Network: Sending to peer ${peer.id}`)
+        peer.send(data)
+      } catch (err) {
+        console.error(`Network: Failed to send to peer ${peer.id}:`, err)
+      }
+    })
   }
   const getPeerStream = (peerId: string) => {
     return streams()[peerId]
   }
+  // Выносим логику инициализации пира в отдельную функцию
+  const onPeerReady = (peer: ConnectedPeer, sb: Switchboard) => {
+    console.log(`NetworkProvider: Peer ${peer.id} ready for data`)
+
+    // Удаляем из отключенных
+    setDisconnected((prev) => {
+      const newSet = new Set(prev)
+      newSet.delete(peer.id)
+      return newSet
+    })
+
+    // Отправляем приветствие
+    try {
+      const hello = {
+        type: 'hello',
+        from: sb.peerID,
+        timestamp: Date.now()
+      }
+      console.log(`NetworkProvider: Sending hello to ${peer.id}:`, hello)
+      peer.send(JSON.stringify(hello))
+    } catch (e) {
+      console.error('Failed to send hello:', e)
+    }
+  }
+
   return (
     <NetworkContext.Provider
       value={{
