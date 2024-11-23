@@ -108,7 +108,7 @@ export const TopControls: Component = () => {
               onInput={(e) => setSwarmInput(e.currentTarget.value)}
               onKeyDown={handleSwarmChange}
               onBlur={handleSwarmChange}
-              placeholder="Введите имя свoрма"
+              placeholder="Введите имя роя"
               autofocus
             />
             <Show when={isConnecting()}>
