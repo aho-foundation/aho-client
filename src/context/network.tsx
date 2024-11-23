@@ -169,7 +169,6 @@ export const NetworkProvider = (props: { children: JSX.Element }) => {
         // Инициируем подключение
         if (!peer.isConnected) {
           console.log(`NetworkProvider: Initiating connection to peer ${peer.id}`)
-
         }
 
         peer.on('connect', () => {

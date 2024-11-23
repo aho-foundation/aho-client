@@ -19,14 +19,15 @@
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-dialog": "^2.0.1",
     "@tauri-apps/plugin-shell": "^2.0.1",
-    "bittorrent-tracker": "^11.1.2",
     "clsx": "^2.1.1",
     "solid-js": "^1.9.3",
     "switchboard.js": "^2.1.0",
+    "torrent-discovery": "^11.0.11",
     "wilderness": "^5.1.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@solid-primitives/scheduled": "^1.4.4",
     "@tauri-apps/cli": "^2.1.0",
     "internal-ip": "^8.0.0",
     "typescript": "^5.6.3",

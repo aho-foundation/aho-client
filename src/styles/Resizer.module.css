@@ -1,0 +1,40 @@
+.resizerContainer {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  transition: background-color 0.2s ease;
+}
+
+.resizer:hover,
+.resizer.active {
+  background-color: var(--color-primary);
+  opacity: 0.2;
+}
+
+.left {
+  left: 0;
+}
+
+.right {
+  right: 0;
+}
+
+/* Убираем выделение текста при ресайзе */
+.active {
+  user-select: none;
+}
+
+/* Стили для мобильных устройств */
+@media (max-width: 768px) {
+  .resizer {
+    display: none;
+  }
+} 

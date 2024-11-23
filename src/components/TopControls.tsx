@@ -3,7 +3,7 @@ import { ConnectionIndicator } from '~/components/ConnectionIndicator'
 import { useNetwork } from '~/context/network'
 
 import styles from '~/styles/TopControls.module.css'
-import { Loading } from './Loading'
+import { Loading } from './Loading.tsx'
 
 export const TopControls: Component = () => {
   const { connection, currentSwarm, connect, disconnect, setCurrentSwarm } = useNetwork()
@@ -101,15 +101,20 @@ export const TopControls: Component = () => {
       <Show
         when={!isEditing()}
         fallback={
-          <input
-            class={styles.swarmInput}
-            value={swarmInput()}
-            onInput={(e) => setSwarmInput(e.currentTarget.value)}
-            onKeyDown={handleSwarmChange}
-            onBlur={handleSwarmChange}
-            placeholder="Введите имя свoрма"
-            autofocus
-          />
+          <div class={styles.inputWrapper}>
+            <input
+              class={styles.swarmInput}
+              value={swarmInput()}
+              onInput={(e) => setSwarmInput(e.currentTarget.value)}
+              onKeyDown={handleSwarmChange}
+              onBlur={handleSwarmChange}
+              placeholder="Введите имя свoрма"
+              autofocus
+            />
+            <Show when={isConnecting()}>
+              <Loading />
+            </Show>
+          </div>
         }
       >
         <button class={styles.swarmButton} onClick={() => setIsEditing(true)}>

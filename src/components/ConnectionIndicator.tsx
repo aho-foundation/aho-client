@@ -41,7 +41,7 @@ export const ConnectionIndicator: Component = () => {
         setIsAnnounce(true)
         setTimeout(() => setIsAnnounce(false), 500)
       }
-      
+
       sb.on('tracker-connect', announceHandler)
     }
 
@@ -52,13 +52,13 @@ export const ConnectionIndicator: Component = () => {
 
   return (
     <div class={styles.indicator} title={tooltip()}>
-      <div 
+      <div
         class={`
           ${styles.dot} 
           ${styles[status()]} 
           ${status() === 'connecting' ? styles.searching : ''} 
           ${isAnnounce() ? styles.announce : ''}
-        `} 
+        `}
       />
     </div>
   )

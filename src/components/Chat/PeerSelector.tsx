@@ -1,4 +1,4 @@
-import { Component, For, createSignal } from 'solid-js'
+import { Component, For, Show, createSignal } from 'solid-js'
 import { useContacts } from '~/context/contacts'
 import { useNetwork } from '~/context/network'
 import styles from '~/styles/PeerSelector.module.css'
@@ -14,7 +14,6 @@ export const PeerSelector: Component<PeerSelectorProps> = (props) => {
   const [selectedPeers, setSelectedPeers] = createSignal<string[]>([])
   const { connection } = useNetwork()
   const { getUsername } = useContacts()
-  const [error, setError] = createSignal<string | null>(null)
 
   const togglePeerSelection = (peerId: string) => {
     const newSelected = selectedPeers().includes(peerId)
@@ -72,7 +71,11 @@ export const PeerSelector: Component<PeerSelectorProps> = (props) => {
         </For>
       </div>
 
-      {error() && <div class={styles.errorTooltip}>{error()}</div>}
+      <Show when={(connection()?.connectedPeers || []).length === 0}>
+        <div class={styles.errorTooltip}>
+          Вы не подключены к сети. Попробуйте подключиться к другому трекеру
+        </div>
+      </Show>
     </div>
   )
 }
